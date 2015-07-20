@@ -12,3 +12,16 @@ module Confo
     end
   end
 end
+
+unless defined?(Rails)
+  class String
+    def demodulize(path)
+      path = path.to_s
+      if i = path.rindex('::')
+        path[(i + 2)..-1]
+      else
+        path
+      end
+    end
+  end
+end
