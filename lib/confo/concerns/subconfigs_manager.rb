@@ -1,43 +1,51 @@
 module Confo
   module SubconfigsManager
-    extend ActiveSupport::Concern if defined?(Rails)
+    extend ActiveSupport::Concern
 
     module ClassMethods
-
-      attr_reader :subconfigs
-
       def subconfig(name, options = nil)
         @subconfigs ||= {}
         subconfig_options = @subconfigs[name] || {name: name}
         subconfig_options.merge!(options) if options
         @subconfigs[name] = subconfig_options
-        define_subconfig_reader(subconfig_options)
+        define_subconfig_reader(name)
         subconfig_options
+      end
+
+      def subconfigs_options
+        subconfigs = @subconfigs ? {}.merge(@subconfigs) : {}
+        if superclass.respond_to?(:subconfigs_options)
+          superclass.subconfigs_options.each do |name, options|
+            new_options = {}
+            new_options.merge!(subconfigs[name]) if subconfigs[name]
+            new_options.merge!(options)
+            subconfigs[name] = new_options
+          end
+        end
+        subconfigs
       end
 
       protected
 
-      def define_subconfig_reader(subconfig_options)
-        define_method(subconfig_options[:name]) do |&block|
-          subconfig(subconfig_options[:name], &block)
+      def define_subconfig_reader(subconfig_name)
+        define_method(subconfig_name) do |&block|
+          subconfig(subconfig_name, &block)
         end
       end
     end
 
     def subconfigs
-      if self.class.subconfigs
-        self.class.subconfigs.reduce({}) do |memo, pair|
-          name = pair.first
-          memo[name] = send(name)
-          memo
-        end
-      end || {}
+      self.class.subconfigs_options.reduce({}) do |memo, pair|
+        name = pair.first
+        memo[name] = subconfig(name)
+        memo
+      end
     end
 
     def subconfig(name, &block)
       @subconfigs ||= {}
       unless subconfig = @subconfigs[name]
-        subconfig_options = self.class.subconfigs[name]
+        subconfig_options = self.class.subconfigs_options[name]
         subconfig_class   = lookup_subconfig_class(subconfig_options)
         subconfig         = @subconfigs[name] = build_subconfig(subconfig_class)
       end

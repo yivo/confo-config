@@ -3,12 +3,9 @@ module Confo
     include OptionsManager
     include SubconfigsManager
 
-    unless defined?(Rails)
-      extend SubconfigsManager::ClassMethods
-    end
-
-    def initialize
+    def initialize(&block)
       preconfigure
+      configure(&block) if block
     end
 
     def configure(&block)
