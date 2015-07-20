@@ -6,29 +6,41 @@ module Confo
       @options ||= {}
     end
 
-    def option(name, *args)
-      if args.present?
-        options[name.to_sym] = args.first
+    def get(option, *args)
+      respond_to?(option) ? send(option) : Confo.result_of(options[option.to_sym], *args)
+    end
+
+    def set(option_name, option_value)
+      if respond_to?(method_name = "#{option_name}=")
+        send(method_name, option_value)
       else
-        options[name.to_sym]
+        options[option_name.to_sym] = option_value
       end
+      self
+    end
+
+    def option(option, *args)
+      args.size > 0 ? set(option, args.first) : get(option)
     end
 
     def [](option_name)
-      option(option_name)
+      get(option_name)
     end
 
     def []=(option_name, option_value)
-      option(option_name, option_value)
+      set(option_name, option_value)
     end
 
-    def fetch(option, *args)
-      Confo.result_of(self.option(option), *args)
+    def set?(option)
+      options.has_key?(option.to_sym)
     end
 
-    def method_missing(name, *args, &block)
-      name = name.to_s.sub(/=+\Z/, '')
-      option(name, *args)
+    def unset(option)
+      options.delete(option.to_sym)
+    end
+
+    def method_missing(method_name, *args, &block)
+      option(method_name.to_s.sub(/=+\Z/, ''), *argd)
     end
   end
 end

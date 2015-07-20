@@ -8,7 +8,8 @@ module Confo
     end
 
     def configure(&block)
-      instance_eval(&block)
+      instance_eval(&block) if block
+      self
     end
 
     def to_hash
