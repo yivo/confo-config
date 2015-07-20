@@ -10,9 +10,5 @@ module Confo
       value = self.option(option)
       value.respond_to?(:call) ? value.call(*args[0...value.arity]) : value
     end
-
-    def fetch(option, *args)
-      result_of(self.option(option), *args)
-    end
   end
 end
