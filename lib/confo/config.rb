@@ -3,8 +3,9 @@ module Confo
     include OptionsManager
     include SubconfigsManager
 
-    def initialize(&block)
+    def initialize(options = nil, &block)
       preconfigure
+      set(options) if options
       configure(&block) if block
     end
 
