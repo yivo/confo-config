@@ -1,3 +1,5 @@
+require_relative '../confo.rb'
+
 module Confo
   class Config
     include OptionsManager
