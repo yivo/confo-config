@@ -1,31 +1,35 @@
-# Confo
+# ConfoConfig
 
-TODO: Write a gem description
-
-## Installation
-
-Add this line to your application's Gemfile:
-
+## A little configuration DSL
 ```ruby
-gem 'confo'
+configuration do
+  autocomplete_limit 20
+  autocomplete_phrase_length 2
+
+  i18n do
+    available_locales [:en, :ru]
+    default_locale :en
+  end
+
+  list do
+    single_actions { can :update, :toggle, :delete, :preview }
+    plural_actions { can :create, :filter, :export, :search }
+
+    highlight { role admin: :red, user: :gray }
+
+    configure(:column, :avatar) { type :photo }
+
+    columns :name, :avatar, :role
+  end
+
+  form do
+    configure(:input, :avatar) { type :photo }
+    actions { can :save, :cancel }
+  end
+end
 ```
 
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install confo
-
-## Usage
-
-TODO: Write usage instructions here
-
-## Contributing
-
-1. Fork it ( https://github.com/[my-github-username]/confo/fork )
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create a new Pull Request
+## Gemfile
+```ruby
+gem 'confo-config', github: 'yivo/confo-config'
+```
