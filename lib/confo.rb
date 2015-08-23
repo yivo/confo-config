@@ -2,13 +2,23 @@ require 'active_support/all'
 require 'confo/version'
 require 'confo/concerns/options_manager'
 require 'confo/concerns/subconfigs_manager'
+require 'confo/concerns/definitions_manager'
 require 'confo/config'
 require 'confo/preconfigurator'
 
 module Confo
   class << self
     def result_of(value, *args)
-      value.respond_to?(:call) ? value.call(*args[0...value.arity]) : value
+      if value.respond_to?(:call)
+        _args_ = value.arity > 0 ? args[0...value.arity] : args
+        value.call(*args)
+      else
+        value
+      end
+    end
+
+    def callable_without_arguments?(obj)
+      obj.respond_to?(:call) && (!obj.respond_to?(:arity) || obj.arity == 0)
     end
   end
 end

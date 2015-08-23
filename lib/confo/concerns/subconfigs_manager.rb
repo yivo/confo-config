@@ -57,7 +57,7 @@ module Confo
       subconfigs
     end
 
-    def subconfig(subconfig_name, &block)
+    def subconfig(subconfig_name, options_to_set = nil, &block)
       @subconfig_instances  ||= {}
       subconfig_name          = subconfig_name.to_sym
       subconfig_instance      = @subconfig_instances[subconfig_name]
@@ -75,6 +75,7 @@ module Confo
 
         @subconfig_instances[subconfig_name] = subconfig_instance
       end
+      subconfig_instance.set(options_to_set) if options_to_set
       subconfig_instance.configure(&block) if block
       subconfig_instance
     end
