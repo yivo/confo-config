@@ -3,39 +3,35 @@ module Confo
     extend ActiveSupport::Concern
 
     module ClassMethods
+
       # Define option accessors.
-      #
-      def option(*names)
+      def option_accessor(*names)
         names.each do |name|
-          define_method("#{name}") do |*args|
-            if args.size > 0
-              set_value(name, args.first)
-              self
-            else
-              get_value(name)
-            end
-          end
-          define_method("#{name}=") do |value|
-            set_value(name, value)
+          define_option_functional_accessor(name)
+          define_option_writer(name)
+        end
+      end
+
+      def define_option_functional_accessor(name)
+        define_method("#{name}") do |*args|
+          if args.size > 0
+            raw_set(name, args.first)
             self
+          else
+            raw_get(name)
           end
         end
       end
 
-      alias options option
-    end
-
-    # Returns all options at once.
-    #   obj.options => { option: 'value' }
-    #
-    def options
-      data.reduce({}) do |memo, name, value|
-        memo[name.to_sym] = get(name)
-        memo
+      def define_option_writer(name)
+        define_method("#{name}=") do |value|
+          raw_set(name, value)
+          self
+        end
       end
     end
 
-    # Returns option value.
+    # Returns option value:
     #   obj.get(:option)    => 'value'
     #   obj.get('option')   => 'value'
     #
@@ -44,88 +40,113 @@ module Confo
     #
     #   obj.set :option, -> (arg) { 'value' }
     #   obj.get(:option)    => -> (arg) { 'value' }
-    #
     def get(option)
-      internal_get(option)
+      public_get(option)
     end
 
     # Alias for +get+.
-    #
     alias [] get
 
-    # If you expect computed value you can pass arguments to it.
-    #   obj.set :calculator, -> (num) { num * 2 }
-    #   obj.result_of :calculator, 2    => 4
-    #
-    def result_of(option, *args)
-      Confo.result_of(get(option), *args)
+    protected
+
+    # Method to get an option.
+    # If there is an option accessor defined then it will be used.
+    # In other cases +raw_get+ will be used.
+    def public_get(option)
+      respond_to?(option) ? send(option) : raw_get(option)
     end
 
-    # Sets option.
+    # Internal method to get an option.
+    # If value is callable without arguments
+    # it will be called and result will be returned.
+    def raw_get(option)
+      value = data[option]
+      Confo.callable_without_arguments?(value) ? value.call : value
+    end
+
+    public
+
+    # Sets option:
     #   obj.set(:option, 'value')
     #   obj.set('option', 'value')
     #   obj.set({ foo: '1', bar: '2', baz: -> { 3 } })
-    #
-    def set(arg, value = nil)
+    def set(arg, *args)
       if arg.kind_of?(Hash)
-        arg.each { |k, v| internal_set(k, v) }
-      else
-        internal_set(arg, value)
+        arg.each { |k, v| public_set(k, v) }
+      elsif args.size > 0
+        public_set(arg, args.first)
       end
       self
     end
 
     # Alias for +set+.
-    #
     alias []= set
 
-    # Sets option only if it is not set yet.
+    protected
+
+    # Method to set an option.
+    # If there is an option accessor defined then it will be used.
+    # In other cases +raw_set+ will be used.
+    def public_set(option, value)
+      method = "#{option}="
+      respond_to?(method) ? send(method, value) : raw_set(option, value)
+    end
+
+    # Internal method to set option.
+    def raw_set(option, value)
+      data[option] = value
+    end
+
+    public
+
+    # Sets option only if it is not set yet:
     #   obj.set_at_first(:option, 1)
     #   obj.get(:option)      => 1
     #   obj.set_at_first(:option, 2)
     #   obj.get(:option)      => 1
-    #
     def set_at_first(*args)
       set?(*args)
       self
     end
 
     # Alias for +set_at_first+.
-    #
     alias init set_at_first
-    
-    # Option accessor in functional style.
+
+    # Option accessor in functional style:
     #   obj.option(:option, 'value')
     #   obj.option(:option)   => 'value'
-    #
     def option(option, *args)
       args.size > 0 ? set(option, args.first) : get(option)
     end
 
     # Checks if option is set.
     # Works similar to set if value passed but sets only uninitialized options.
-    #
-    def set?(arg, *args)
+    def set?(arg, *rest_args)
       if arg.kind_of?(Hash)
-        arg.each { |k, v| internal_set(k, v) unless data.has_key?(k) }
+        arg.each { |k, v| set(k, v) unless set?(k) }
         nil
-      elsif args.size > 0
-        internal_set(arg, args.first) unless data.has_key?(arg)
+      elsif rest_args.size > 0
+        set(arg, rest_args.first) unless set?(arg)
         true
       else
         data.has_key?(arg)
       end
     end
 
+    # If you expect computed value you can pass arguments to it:
+    #   obj.set :calculator, -> (num) { num * 2 }
+    #   obj.result_of :calculator, 2    => 4
+    def result_of(option, *args)
+      Confo.result_of(get(option), *args)
+    end
+
     # Unsets option.
-    #
     def unset(option)
       data.delete(option)
       self
     end
 
     # Returns option names as array of symbols.
-    #
     def keys
       data.reduce([]) do |memo, k, v|
         memo << k.to_sym
@@ -133,61 +154,31 @@ module Confo
       end
     end
 
-    # Implements funny DSL.
-    # USE IT CAREFUL.
-    # WORKS BEST WITH PREDEFINED OPTION ACCESSORS!
-    #
-    #   obj.configure do
-    #     foo 1
-    #     bar 2
-    #   end
-    #
-    def method_missing(method_name, *args)
-      option(method_name.to_s.sub(/=+\Z/, ''), *args)
+    # Returns option values as array.
+    def values
+      data.values
     end
 
-    # protected
+    # Returns all options at once.
+    #   obj.options => { option: 'value' }
+    def options
+      data.reduce({}) do |memo, pair|
+        option        = pair.first.to_sym
+        memo[option]  = get(option)
+        memo
+      end
+    end
+
+    def options_to_hash
+      options = self.options
+      options.each { |option, value| options[option] = value.to_hash }
+      options
+    end
+
+    protected
 
     def data
       @data ||= ActiveSupport::HashWithIndifferentAccess.new
-    end
-
-    def callable_without_arguments?(obj)
-      obj.respond_to?(:call) && (!obj.respond_to?(:arity) || obj.arity == 0)
-    end
-
-    # Internal method to set option.
-    #
-    def set_value(option, value)
-      data[option] = value
-    end
-
-    # Returns option value.
-    # If value is callable without arguments
-    # it will be called and result will be returned.
-    #
-    def get_value(option)
-      value = data[option]
-      callable_without_arguments?(value) ? value.call : value
-    end
-
-    private
-
-    # Internal method to set an option.
-    # If there is an option method defined then it will be used.
-    # In other cases +set_value+ will be used.
-    #
-    def internal_set(option, value)
-      method_name = "#{option}="
-      respond_to?(method_name) ? send(method_name, value) : set_value(option, value)
-    end
-
-    # Internal method to get an option.
-    # If there is an option method defined then it will be used.
-    # In other cases +get_value+ will be used.
-    #
-    def internal_get(option)
-      respond_to?(option) ? send(option) : get_value(option)
     end
   end
 end
