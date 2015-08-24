@@ -60,7 +60,7 @@ module Confo
     # If value is callable without arguments
     # it will be called and result will be returned.
     def raw_get(option)
-      value = data[option]
+      value = storage[option]
       Confo.callable_without_arguments?(value) ? value.call : value
     end
 
@@ -94,7 +94,7 @@ module Confo
 
     # Internal method to set option.
     def raw_set(option, value)
-      data[option] = value
+      storage[option] = value
     end
 
     public
@@ -129,7 +129,7 @@ module Confo
         set(arg, rest_args.first) unless set?(arg)
         true
       else
-        data.has_key?(arg)
+        storage.has_key?(arg)
       end
     end
 
@@ -142,13 +142,13 @@ module Confo
 
     # Unsets option.
     def unset(option)
-      data.delete(option)
+      storage.delete(option)
       self
     end
 
     # Returns option names as array of symbols.
     def keys
-      data.reduce([]) do |memo, k, v|
+      storage.reduce([]) do |memo, k, v|
         memo << k.to_sym
         memo
       end
@@ -156,29 +156,29 @@ module Confo
 
     # Returns option values as array.
     def values
-      data.values
+      storage.values
     end
 
     # Returns all options at once.
     #   obj.options => { option: 'value' }
     def options
-      data.reduce({}) do |memo, pair|
-        option        = pair.first.to_sym
-        memo[option]  = get(option)
-        memo
-      end
-    end
-
-    def options_to_hash
-      options = self.options
-      options.each { |option, value| options[option] = value.to_hash }
+      options = storage.dup
+      options.each { |k, v| options[k] = get(k) }
       options
     end
 
     protected
 
-    def data
-      @data ||= ActiveSupport::HashWithIndifferentAccess.new
+    def storage
+      @storage ||= OptionsStorage.new
+    end
+  end
+
+  class OptionsStorage < Hash
+    def to_hash
+      new_hash = {}
+      each { |k, v| new_hash[k.kind_of?(String) ? k.to_sym : k] = Confo.convert_to_hash(v) }
+      Hash.new(default).merge!(new_hash)
     end
   end
 end

@@ -4,50 +4,90 @@ module Confo
   class Config
     include OptionsManager
     include SubconfigsManager
-    include DefinitionsManager
 
-    def initialize(options = nil, &block)
+    attr_reader :behaviour_options
+
+    def initialize(behaviour_options = {}, &block)
+      @behaviour_options = behaviour_options
       preconfigure
-      set(options) if options
       configure(&block) if block
     end
 
     def configure(*args, &block)
       case args.size
-        when 0 then instance_eval(&block) if block
-        when 1 then subconfig(args.first, &block)
-        when 2 then definition(*args, &block)
+
+        # Current config configuration:
+        #   object.configure {  }
+        when 0
+          instance_eval(&block) if block
+          self
+
+        when 1, 2, 3
+          arg1, arg2, arg3  = args
+          arg1_hash         = arg1.kind_of?(Hash)
+
+          # Hash-based collection syntax:
+          #   object.configure(property: :id) {  }
+          #   object.configure(property: :id, {option: :value}) {  }
+          #
+          # Full definition syntax:
+          #   object.configure(:property, :id) {  }
+          #   object.configure(:property, :id, {option: :value}) {  }
+          if arg1_hash || (args.size == 2 && arg2.kind_of?(Hash) == false)
+            subconfig_name  = (arg1_hash ? arg1.keys.first : arg1).to_s.pluralize
+            config_id       = arg1_hash ? arg1.values.first : arg2
+            options         = arg1_hash ? arg2 : arg3
+            subconfig(subconfig_name, options, fallback_class_name: 'Confo::Collection')
+              .configure(config_id, &block)
+          else
+
+            # Subconfig configuration:
+            #   object.configure(:description)
+            #   object.configure(:description, {option: :value})
+            subconfig(arg1, arg2, &block)
+          end
+
+        else self
       end
-      self
+    end
+
+    def method_missing(name, *args, &block)
+      case args.size
+        when 0
+          if block
+            # Wants to configure subconfig:
+            #   object.description {  }
+            subconfig(name, &block)
+          else
+
+            # Wants one of the following:
+            #   - access subconfig
+            #   - access option
+            subconfig_exists?(name) ? subconfig(name) : option(normalize_option(name))
+          end
+
+        when 1
+          arg = args.first
+
+          # Wants to access collection:
+          #   object.properties :id {  }
+          if (arg.is_a?(String) || arg.is_a?(Symbol)) && subconfig_exists?(name)
+            subconfig(name.to_s.pluralize, arg, &block)
+          else
+
+            # Wants to access option:
+            #   object.cache = :none
+            #   object.cache :none
+            option(normalize_option(name), arg)
+          end
+
+        else
+          option(normalize_option(name), *args)
+      end
     end
 
     def to_hash
-      {}.merge!(options_to_hash).merge!(subconfigs_to_hash).merge!(definition_groups_to_hash)
-    end
-
-    # Implements funny DSL.
-    # USE IT CAREFUL.
-    # USE ONLY WITH PREDEFINED OPTION ACCESSORS!
-    #
-    # Configure subconfig:
-    #   obj.configure :sub { }
-    #
-    # Configure definition:
-    #   obj.configure :thing, :name { }
-    #
-    # Access option:
-    #   obj.foo
-    #
-    def method_missing(method_name, *args, &block)
-      if block
-        case args.size
-          when 0 then subconfig(method_name, &block)
-          when 1 then definition(method_name, args.first, &block)
-        end
-        self
-      else
-        option(method_name.to_s.sub(/=+\Z/, ''), *args)
-      end
+      {}.merge!(options.to_hash).merge!(subconfigs.to_hash)
     end
 
     protected
@@ -72,6 +112,10 @@ module Confo
 
     def guess_preconfigurator_class_name
       "#{configurable_component_name}Preconfigurator"
+    end
+
+    def normalize_option(name)
+      name.to_s.sub(/=+\Z/, '').to_sym
     end
   end
 end
