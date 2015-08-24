@@ -91,7 +91,7 @@ module Confo
         class_name.to_s.camelize
       else
         guess_subconfig_class_name(subconfig_name)
-      end.safe_constantize || subconfig_options.fetch(:fallback_class_name)
+      end.safe_constantize || subconfig_options.fetch(:fallback_class_name, 'Confo::Config').constantize
     end
 
     def guess_subconfig_class_name(subconfig_name)

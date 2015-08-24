@@ -19,7 +19,7 @@ configuration do
 
     configure(:column, :avatar) { type :photo }
 
-    columns :name, :avatar, :role
+    columns { include :name, :avatar, :role }
   end
 
   form do
