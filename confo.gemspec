@@ -1,19 +1,20 @@
+# encoding: utf-8
 require File.expand_path('../lib/confo/version', __FILE__)
 
-Gem::Specification.new do |spec|
-  spec.name          = 'confo-config'
-  spec.version       = Confo::VERSION
-  spec.authors       = ['Yaroslav Konoplov']
-  spec.email         = ['yaroslav@inbox.com']
-  spec.summary       = 'Little configuration framework'
-  spec.description   = 'Little configuration framework'
-  spec.homepage      = 'http://github.com/yivo/confo-config'
-  spec.license       = 'MIT'
+Gem::Specification.new do |s|
+  s.name            = 'confo-config'
+  s.version         = Confo::VERSION
+  s.authors         = ['Yaroslav Konoplov']
+  s.email           = ['yaroslav@inbox.com']
+  s.summary         = 'Little configuration framework'
+  s.description     = 'Little configuration framework'
+  s.homepage        = 'http://github.com/yivo/confo-config'
+  s.license         = 'MIT'
 
-  spec.files         = `git ls-files -z`.split("\x0")
-  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
-  spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
-  spec.require_paths = ['lib']
+  s.executables     = `git ls-files -z -- bin/*`.split("\x0").map{ |f| File.basename(f) }
+  s.files           = `git ls-files -z`.split("\x0")
+  s.test_files      = `git ls-files -z -- {test,spec,features}/*`.split("\x0")
+  s.require_paths   = ['lib']
 
-  spec.add_dependency 'activesupport', '~> 4.0' # 4.0 <= version < 5.0
+  s.add_dependency 'activesupport', '~> 4.0'      # 4.0 <= version < 5.0
 end
