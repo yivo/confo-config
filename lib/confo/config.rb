@@ -58,31 +58,41 @@ module Confo
             # Wants to configure subconfig:
             #   object.description {  }
             subconfig(name, &block)
-          else
 
+          # Wants to access boolean option:
+          #   object.property?
+          elsif name =~ /^(\w+)\?$/
+            !!get($1)
+
+          else
             # Wants one of the following:
             #   - access subconfig
             #   - access option
-            subconfig_exists?(name) ? subconfig(name) : option(normalize_option(name))
+            subconfig_exists?(name) ? subconfig(name) : option(strip_assignment(name))
           end
 
         when 1
           arg = args.first
 
+          # Wants to test option value:
+          #   object.property?(:value) => options[:property] == :value
+          if name =~ /^(\w+)\?$/
+            get($1) == arg
+
           # Wants to access collection:
           #   object.properties :id {  }
-          if (arg.is_a?(String) || arg.is_a?(Symbol)) && subconfig_exists?(name)
+          elsif (arg.is_a?(String) || arg.is_a?(Symbol)) && subconfig_exists?(name)
             subconfig(name.to_s.pluralize, arg, &block)
-          else
 
+          else
             # Wants to access option:
             #   object.cache = :none
             #   object.cache :none
-            option(normalize_option(name), arg)
+            option(strip_assignment(name), arg)
           end
 
         else
-          option(normalize_option(name), *args)
+          option(strip_assignment(name), *args)
       end
     end
 
@@ -90,7 +100,7 @@ module Confo
       {}.merge!(options.to_hash).merge!(subconfigs.to_hash)
     end
 
-    protected
+  protected
 
     def preconfigure
       preconfigurator_class = lookup_preconfigurator_class
@@ -114,7 +124,7 @@ module Confo
       "#{configurable_component_name}Preconfigurator"
     end
 
-    def normalize_option(name)
+    def strip_assignment(name)
       name.to_s.sub(/=+\Z/, '').to_sym
     end
   end

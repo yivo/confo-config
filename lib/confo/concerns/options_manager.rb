@@ -47,7 +47,7 @@ module Confo
     # Alias for +get+.
     alias [] get
 
-    protected
+  protected
 
     # Method to get an option.
     # If there is an option accessor defined then it will be used.
@@ -64,7 +64,7 @@ module Confo
       Confo.callable_without_arguments?(value) ? value.call : value
     end
 
-    public
+  public
 
     # Sets option:
     #   obj.set(:option, 'value')
@@ -82,7 +82,7 @@ module Confo
     # Alias for +set+.
     alias []= set
 
-    protected
+  protected
 
     # Method to set an option.
     # If there is an option accessor defined then it will be used.
@@ -97,7 +97,7 @@ module Confo
       storage[option] = value
     end
 
-    public
+  public
 
     # Sets option only if it is not set yet:
     #   obj.set_at_first(:option, 1)
@@ -167,7 +167,7 @@ module Confo
       options
     end
 
-    protected
+  protected
 
     def storage
       @storage ||= OptionsStorage.new

@@ -59,7 +59,7 @@ module Confo
       end
     end
 
-    protected
+  protected
 
     def config_class(config_id, config_options)
       config_options.try(:[], :class_name).try(:safe_constantize) || Config

@@ -59,7 +59,7 @@ module Confo
       subconfig_instances.exists?(subconfig_name)
     end
 
-    protected
+  protected
 
     def subconfig_instances
       @subconfig_instances ||= Collection.new
