@@ -26,7 +26,7 @@ module Confo
     end
 
     def get(id)
-      define(id)
+      storage[convert_id(id)]
     end
 
     def set(id, config)
@@ -49,7 +49,10 @@ module Confo
     end
 
     def to_a
-      storage.values
+      storage.reduce([]) do |memo, (id, instance)|
+        memo << (instance.respond_to?(:to_hash) ? instance.to_hash : instance)
+        memo
+      end
     end
 
     def to_hash
