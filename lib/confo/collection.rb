@@ -59,6 +59,14 @@ module Confo
       end
     end
 
+    def method_missing(name, *args, &block)
+      if args.empty? && name =~ /^(\w+)\?$/
+        exists?($1)
+      else
+        super
+      end
+    end
+
   protected
 
     def config_class(config_id, config_options)
