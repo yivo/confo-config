@@ -60,7 +60,7 @@ module Confo
     # If value is callable without arguments
     # it will be called and result will be returned.
     def raw_get(option)
-      value = storage[option]
+      value = options_storage[option]
       Confo.callable_without_arguments?(value) ? value.call : value
     end
 
@@ -94,7 +94,7 @@ module Confo
 
     # Internal method to set option.
     def raw_set(option, value)
-      storage[option] = value
+      options_storage[option] = value
     end
 
   public
@@ -129,7 +129,7 @@ module Confo
         set(arg, rest_args.first) unless set?(arg)
         true
       else
-        storage.has_key?(arg)
+        options_storage.has_key?(arg)
       end
     end
 
@@ -142,43 +142,36 @@ module Confo
 
     # Unsets option.
     def unset(option)
-      storage.delete(option)
+      options_storage.delete(option)
       self
     end
 
     # Returns option names as array of symbols.
     def keys
-      storage.reduce([]) do |memo, k, v|
+      options_storage.each_with_object([]) do |(k, v), memo|
         memo << k.to_sym
-        memo
       end
     end
 
     # Returns option values as array.
     def values
-      storage.values
+      options_storage.each_with_object([]) do |(k, v), memo|
+        memo << get(k)
+      end
     end
 
     # Returns all options at once.
     #   obj.options => { option: 'value' }
     def options
-      options = storage.dup
-      options.each { |k, v| options[k] = get(k) }
-      options
+      options_storage.each_with_object({}) do |(k, v), memo|
+        memo[k] = get(k)
+      end
     end
 
   protected
 
-    def storage
-      @storage ||= OptionsStorage.new
-    end
-  end
-
-  class OptionsStorage < Hash
-    def to_hash
-      new_hash = {}
-      each { |k, v| new_hash[k.kind_of?(String) ? k.to_sym : k] = Confo.convert_to_hash(v) }
-      Hash.new(default).merge!(new_hash)
+    def options_storage
+      @options_storage ||= ActiveSupport::HashWithIndifferentAccess.new
     end
   end
 end

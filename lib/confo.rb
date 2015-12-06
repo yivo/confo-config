@@ -22,12 +22,12 @@ module Confo
     end
 
     def convert_to_hash(value)
-      if value.is_a?(Hash)
+      if value.respond_to?(:to_hash)
         value.to_hash
       elsif value.is_a?(Array)
         value.map { |e| convert_to_hash(e) }
       else
-        value.respond_to?(:to_hash) ? value.to_hash : value
+        value
       end
     end
 

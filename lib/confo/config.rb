@@ -97,7 +97,7 @@ module Confo
     end
 
     def to_hash
-      {}.merge!(options.to_hash).merge!(subconfigs.to_hash)
+      options.merge!(subconfigs)
     end
 
   protected

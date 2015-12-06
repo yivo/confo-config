@@ -49,16 +49,14 @@ module Confo
     end
 
     def to_a
-      storage.reduce([]) do |memo, (id, instance)|
+      storage.each_with_object([]) do |(id, instance), memo|
         memo << (instance.respond_to?(:to_hash) ? instance.to_hash : instance)
-        memo
       end
     end
 
     def to_hash
-      storage.reduce({}) do |memo, (id, instance)|
+      storage.each_with_object({}) do |(id, instance), memo|
         memo[id] = Confo.convert_to_hash(instance)
-        memo
       end
     end
 
@@ -85,7 +83,7 @@ module Confo
     end
 
     def convert_id(id)
-      id.to_sym
+      id.kind_of?(Symbol) ? id : id.to_sym
     end
   end
 end
