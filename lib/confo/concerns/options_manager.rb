@@ -17,6 +17,7 @@ module Confo
 
       end
 
+    protected
       def define_option_functional_accessor(name)
         define_method("#{name}") do |*args|
           if args.size > 0
@@ -174,9 +175,11 @@ module Confo
     end
 
   protected
-
     def options_storage
-      @options_storage ||= ActiveSupport::HashWithIndifferentAccess.new
+      @options_storage ||= OptionsStorage.new
     end
+  end
+
+  class OptionsStorage < ActiveSupport::HashWithIndifferentAccess
   end
 end

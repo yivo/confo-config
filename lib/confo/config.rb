@@ -5,12 +5,40 @@ module Confo
     include OptionsManager
     include SubconfigsManager
 
-    attr_reader :behaviour_options
+    attr_reader :settings
 
-    def initialize(behaviour_options = {}, &block)
-      @behaviour_options = behaviour_options
+    def initialize(settings = {}, &block)
+      @settings = settings
       preconfigure
       configure(&block) if block
+    end
+
+    def with_new_settings(new_settings)
+      self.class.new(settings.merge(new_settings)).tap do |new_config|
+        if var = @options_storage
+          new_config.instance_variable_set(:@options_storage, var.deep_dup)
+        end
+
+        if var = @subconfig_instances
+          new_config.instance_variable_set(:@subconfig_instances, var.with_new_settings(new_settings))
+        end
+      end
+    end
+
+    def dup(config_settings = {})
+      self.class.new(settings.merge(config_settings)).tap do |new_config|
+        if var = @options_storage
+          new_config.instance_variable_set(:@options_storage, var)
+        end
+
+        if var = @subconfig_instances
+          new_config.instance_variable_set(:@subconfig_instances, var)
+        end
+      end
+    end
+
+    def deep_dup(config_settings = {})
+      with_new_settings(config_settings)
     end
 
     def configure(*args, &block)
@@ -97,7 +125,7 @@ module Confo
     end
 
     def to_hash
-      options.merge!(subconfigs)
+      options.merge!(subconfigs).to_hash
     end
 
   protected

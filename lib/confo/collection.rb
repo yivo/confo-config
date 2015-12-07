@@ -2,10 +2,10 @@ module Confo
   class Collection
     include Enumerable
 
-    attr_reader :behaviour_options
+    attr_reader :settings
 
-    def initialize(behaviour_options = {}, &block)
-      @behaviour_options = behaviour_options
+    def initialize(settings = {}, &block)
+      @settings = settings
       configure(&block) if block
     end
 
@@ -14,13 +14,14 @@ module Confo
       config    = storage[id]
       config  ||= begin
         config_class  = Confo.call(self, :config_class, id, construct_options)
+        check_config_class!(config_class)
         config        = Confo.call(self, :construct_config, config_class, id, construct_options)
         storage[id]   = config
         config.set(:name, id)
         config
       end
 
-      config.set(options)       if options
+      config.set(options)       if options && config.kind_of?(Config)
       config.configure(&block)  if block
       config
     end
@@ -68,13 +69,33 @@ module Confo
       end
     end
 
+    def with_new_settings(new_settings)
+      self.class.new(settings.merge(new_settings)).tap do |new_obj|
+        if storage = @storage
+          storage.each { |k, v| new_obj.set(k.dup, v.with_new_settings(new_settings) ) }
+        end
+      end
+    end
+
+    def dup(config_settings = {})
+      self.class.new(settings.merge(config_settings)).tap do |new_obj|
+        if storage = @storage
+          new_obj.instance_variable_set(:@storage, storage)
+        end
+      end
+    end
+
+    def deep_dup(config_settings = {})
+      with_new_settings(config_settings)
+    end
+
   protected
 
     def config_class(config_id, config_options)
       config_options.try(:[], :class_name).try(:safe_constantize) || Config
     end
 
-    def construct_config(config_class)
+    def construct_config(config_class, config_id, construct_options)
       config_class.new
     end
 
@@ -84,6 +105,10 @@ module Confo
 
     def convert_id(id)
       id.kind_of?(Symbol) ? id : id.to_sym
+    end
+
+    def check_config_class!(config_class)
+      raise 'Forbidden config class!' unless (config_class <= Config or config_class <= Collection)
     end
   end
 end

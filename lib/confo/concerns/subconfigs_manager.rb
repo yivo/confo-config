@@ -67,6 +67,8 @@ module Confo
 
     def subconfig_internal(subconfig_name, options = nil, overrides = nil, &block)
       unless subconfig_exists?(subconfig_name)
+
+        # TODO Bugfix
         subconfig_options   = self.class.subconfigs_options[subconfig_name].try(:dup) || {}
         subconfig_options.merge!(overrides) if overrides
 
