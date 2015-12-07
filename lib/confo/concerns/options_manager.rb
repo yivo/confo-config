@@ -6,6 +6,8 @@ module Confo
 
       # Define option accessors.
       def option_accessor(*names)
+
+        # TODO Save list of option names
         names.each do |name|
           define_option_functional_accessor(name)
           define_option_writer(name)
@@ -59,6 +61,7 @@ module Confo
     # If there is an option accessor defined then it will be used.
     # In other cases +raw_get+ will be used.
     def public_get(option)
+      # TODO Prevent subconfigs here
       respond_to?(option) ? send(option) : raw_get(option)
     end
 
@@ -94,6 +97,7 @@ module Confo
     # If there is an option accessor defined then it will be used.
     # In other cases +raw_set+ will be used.
     def public_set(option, value)
+      # TODO Prevent subconfigs here
       method = "#{option}="
       respond_to?(method) ? send(method, value) : raw_set(option, value)
     end

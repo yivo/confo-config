@@ -27,7 +27,9 @@ module Confo
     end
 
     def get(id)
-      storage[convert_id(id)]
+      id = convert_id(id)
+      define(id)
+      storage[id]
     end
 
     def set(id, config)
