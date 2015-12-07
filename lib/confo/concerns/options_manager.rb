@@ -12,6 +12,11 @@ module Confo
         end
       end
 
+      # TODO Implement
+      def readonly_option(*names)
+
+      end
+
       def define_option_functional_accessor(name)
         define_method("#{name}") do |*args|
           if args.size > 0
