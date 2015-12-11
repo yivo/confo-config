@@ -74,7 +74,7 @@ module Confo
     def with_new_settings(new_settings)
       self.class.new(settings.merge(new_settings)).tap do |new_obj|
         if storage = @storage
-          storage.each { |k, v| new_obj.set(k.dup, v.with_new_settings(new_settings) ) }
+          storage.each { |k, v| new_obj.set(k, v.with_new_settings(new_settings) ) }
         end
       end
     end

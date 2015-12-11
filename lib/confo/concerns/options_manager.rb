@@ -174,7 +174,7 @@ module Confo
     #   obj.options => { option: 'value' }
     def options
       options_storage.each_with_object({}) do |(k, v), memo|
-        memo[k] = get(k)
+        memo[k.to_sym] = get(k)
       end
     end
 
