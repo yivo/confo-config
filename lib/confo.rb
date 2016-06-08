@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'active_support/all'
 require 'confo/version'
 require 'confo/concerns/options_manager'
